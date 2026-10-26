@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07111f" />
+  <title>Neuroband Caretaker Dashboard</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIINfQ3ynhvsJ2uYsWTMyMZ1WeUqPMZB98E="
+    crossorigin=""
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Live Patient Monitoring</p>
+      <h1>Neuroband Caretaker Dashboard</h1>
+    </div>
+
+    <div class="header-status">
+      <div class="status-item">
+        <span id="deviceDot" class="indicator offline"></span>
+        <span id="deviceStatus">Device Offline</span>
+      </div>
+      <div class="status-item">
+        <span class="clock-icon">🕒</span>
+        <span id="lastUpdated">Waiting for device data</span>
+      </div>
+      <button id="soundButton" class="secondary-button" type="button">
+        Enable Alarm Sound
+      </button>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section id="alarmPanel" class="alarm-panel hidden" aria-live="assertive">
+      <div class="alarm-symbol">⚠</div>
+      <div class="alarm-content">
+        <p class="alarm-heading">Caretaker Attention Required</p>
+        <div id="alarmList" class="alarm-list"></div>
+      </div>
+      <div class="alarm-actions">
+        <button id="acknowledgeButton" class="primary-button" type="button">
+          Acknowledge
+        </button>
+        <button id="muteButton" class="secondary-button" type="button">
+          Mute
+        </button>
+      </div>
+    </section>
+
+    <section class="summary-grid">
+      <article id="heartCard" class="card vital-card">
+        <div class="card-heading">
+          <div>
+            <p class="label">Heart Rate</p>
+            <p id="heartStatus" class="substatus">Waiting for device</p>
+          </div>
+          <div id="heartIcon" class="heart-icon">❤️</div>
+        </div>
+        <div class="vital-reading">
+          <span id="heartRate">--</span>
+          <small>BPM</small>
+        </div>
+      </article>
+
+      <article id="spo2Card" class="card vital-card">
+        <div class="card-heading">
+          <div>
+            <p class="label">Blood Oxygen</p>
+            <p id="spo2Status" class="substatus">Waiting for device</p>
+          </div>
+          <span class="blood-icon">🩸</span>
+        </div>
+
+        <div class="gauge-wrap">
+          <div id="spo2Gauge" class="spo2-gauge" style="--gauge-value: 0deg">
+            <div class="gauge-centre">
+              <strong id="spo2">--</strong>
+              <span>%</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article id="fallCard" class="card state-card">
+        <div class="card-heading">
+          <div>
+            <p class="label">Fall Detection</p>
+            <p class="substatus">MPU6050 movement monitoring</p>
+          </div>
+          <span class="state-icon">🚶</span>
+        </div>
+        <div id="fallValue" class="state-value">Normal</div>
+        <div id="fallBadge" class="badge good">No fall detected</div>
+      </article>
+
+      <article id="deviceCard" class="card state-card">
+        <div class="card-heading">
+          <div>
+            <p class="label">Wearable Contact</p>
+            <p class="substatus">MAX30102 finger detection</p>
+          </div>
+          <span class="state-icon">⌚</span>
+        </div>
+        <div id="fingerValue" class="state-value">Device Detached</div>
+        <div id="fingerBadge" class="badge danger">No finger detected</div>
+      </article>
+    </section>
+
+    <section class="connectivity-grid">
+      <article class="card compact-card">
+        <div class="connectivity-row">
+          <span id="wifiIcon" class="connectivity-icon warning">📶</span>
+          <div>
+            <p class="label">Indoor Wi-Fi Positioning</p>
+            <strong id="wifiStatus">Waiting</strong>
+            <p id="wifiDetails" class="substatus">No data</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="card compact-card">
+        <div class="connectivity-row">
+          <span id="gpsIcon" class="connectivity-icon warning">🌐</span>
+          <div>
+            <p class="label">GPS Positioning</p>
+            <strong id="gpsStatus">Waiting</strong>
+            <p id="gpsDetails" class="substatus">No data</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="card compact-card">
+        <div class="connectivity-row">
+          <span id="firebaseIcon" class="connectivity-icon warning">☁️</span>
+          <div>
+            <p class="label">Cloud Connection</p>
+            <strong id="firebaseStatus">Connecting</strong>
+            <p class="substatus">Firebase Realtime Database</p>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="map-section card">
+      <div class="map-header">
+        <div>
+          <p class="label">Geofencing Safe Zone</p>
+          <h2 id="zoneStatus">Waiting for location data</h2>
+          <p id="locationDescription" class="substatus">
+            The map will show the patient position and safe-zone boundary.
+          </p>
+        </div>
+        <div class="map-metrics">
+          <div>
+            <span>Location mode</span>
+            <strong id="locationMode">--</strong>
+          </div>
+          <div>
+            <span>Indoor zone</span>
+            <strong id="indoorZone">--</strong>
+          </div>
+          <div>
+            <span>Distance</span>
+            <strong id="distanceValue">-- m</strong>
+          </div>
+        </div>
+      </div>
+
+      <div id="map"></div>
+
+      <div class="map-legend">
+        <span><i class="legend-dot patient"></i>Patient</span>
+        <span><i class="legend-dot safe"></i>Safe-zone centre</span>
+        <span><i class="legend-ring"></i>Safe-zone radius</span>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Neuroband prototype monitoring interface. Sensor readings are for demonstration only.
+  </footer>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
